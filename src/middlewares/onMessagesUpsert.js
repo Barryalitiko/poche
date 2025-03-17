@@ -1,6 +1,5 @@
 const { dynamicCommand } = require("../utils/dynamicCommand");
 const { loadCommonFunctions } = require("../utils/loadCommonFunctions");
-const { autoReactions } = require("../utils/autoReactions");
 const { isSpamDetectionActive } = require("../utils/database");
 const { onlyNumbers } = require("../utils");
 
@@ -51,17 +50,6 @@ exports.onMessagesUpsert = async ({ socket, messages }) => {
           mentions: [senderJid],
         });
         delete spamDetection[remoteJid][senderJid];
-      }
-    }
-
-    for (const [keyword, emoji] of Object.entries(autoReactions)) {
-      if (messageText.toLowerCase().includes(keyword)) {
-        await socket.sendMessage(remoteJid, {
-          react: {
-            text: emoji,
-            key: webMessage.key,
-          },
-        });
       }
     }
 

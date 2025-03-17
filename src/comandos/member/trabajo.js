@@ -22,7 +22,7 @@ const writeData = (filePath, data) => {
   }
 };
 
-const TIEMPO_TRABAJO_MS = 5 * 60 * 1000; // 5 minutos en milisegundos
+const TIEMPO_TRABAJO_MS = 3 * 60 * 1000; // 5 minutos en milisegundos
 
 module.exports = {
   name: "trabajo",
@@ -74,16 +74,16 @@ module.exports = {
     }
 
     const trabajos = [
-      { nombre: "Motoconcho", pago: [8, 10, 15] },
-      { nombre: "Dembowsero", pago: [8, 10, 15] },
-      { nombre: "Banquera", pago: [8, 10, 15] },
-      { nombre: "Delivery", pago: [8, 10, 15] },
-      { nombre: "Colmadero", pago: [8, 10, 15] },
-      { nombre: "Atracador", pago: [8, 10, 15] },
-      { nombre: "Pintor", pago: [8, 10, 15] },
-      { nombre: "Policia", pago: [8, 10, 15] },
-      { nombre: "Cuero", pago: [8, 10, 15] },
-      { nombre: "Bachatero", pago: [8, 10, 15] }
+      { nombre: "Motoconcho", pago: [80, 100, 200] },
+      { nombre: "Dembowsero", pago: [80, 100, 200] },
+      { nombre: "Banquera", pago: [80, 100, 200] },
+      { nombre: "Delivery", pago: [80, 100, 200] },
+      { nombre: "Colmadero", pago: [80, 100, 200] },
+      { nombre: "Atracador", pago: [80, 100, 200] },
+      { nombre: "Pintor", pago: [80, 100, 200] },
+      { nombre: "Guachiman", pago: [80, 100, 200] },
+      { nombre: "Cuero", pago: [80, 100, 200] },
+      { nombre: "Bachatero", pago: [80, 100, 200] }
     ];
 
     const trabajoElegido = trabajos.find(t => t.nombre.toLowerCase() === args.join(" ").toLowerCase());
@@ -107,16 +107,16 @@ module.exports = {
 
 async function pagarTrabajo(userJid, trabajo, sendReply) {
   const trabajos = {
-    Motoconcho: { pago: [8, 10, 15], mensajes: { 8: "Diache, solo 8 pesos.", 10: "Buen día, hiciste 10 pesos.", 15: "Coronaste con 15 pesos!" } },
-    Dembowsero: { pago: [8, 10, 15], mensajes: { 8: "Solo 8 pesos por tu demo.", 10: "Un party te dejó 10 pesos.", 15: "Pegaste un tema, 15 pesos!" } },
-    Banquera: { pago: [8, 10, 15], mensajes: { 8: "8 pesos, floja la venta.", 10: "Te dejaron 10 de propina.", 15: "15 pesos, ¡rompiste la banca!" } },
-    Delivery: { pago: [8, 10, 15], mensajes: { 8: "Malas propinas, 8 pesos.", 10: "10 pesos, no está mal.", 15: "Buena propina, 15 pesos!" } },
-    Colmadero: { pago: [8, 10, 15], mensajes: { 8: "8 pesos, día flojo.", 10: "Vendiste bien, 10 pesos.", 15: "Colmado lleno, 15 pesos!" } },
-    Atracador: { pago: [8, 10, 15], mensajes: { 8: "Mal golpe, solo 8 pesos.", 10: "Coronaste con 10 pesos.", 15: "15 pesos, pero cuídate!" } },
-    Pintor: { pago: [8, 10, 15], mensajes: { 8: "8 pesos, desastre de pintura.", 10: "10 pesos por buen trabajo.", 15: "15 pesos, eres un artista!" } },
-    Policia: { pago: [8, 10, 15], mensajes: { 8: "8 pesos, día tranquilo.", 10: "10 pesos en multas.", 15: "15 pesos en 'coimas'!" } },
-    Cuero: { pago: [8, 10, 15], mensajes: { 8: "8 pesos, poca clientela.", 10: "10 pesos, buen día.", 15: "15 pesos, ¡tú sí sabes!" } },
-    Bachatero: { pago: [8, 10, 15], mensajes: { 8: "8 pesos, nadie te oyó.", 10: "10 pesos, algo pegaste.", 15: "15 pesos, ¡Romeo eres tú!" } }
+    Motoconcho: { pago: [80, 100, 200], mensajes: { 80: "Diache, solo 80 pesos.", 100: "Buen día, hiciste 100 pesos.", 200: "Coronaste con 200 pesos!" } },
+    Dembowsero: { pago: [80, 100, 200], mensajes: { 80: "Solo 80 pesos por tu demo.", 100: "Un party te dejó 100 pesos.", 200: "Pegaste un tema, 200 pesos!" } },
+    Banquera: { pago: [80, 100, 200], mensajes: { 80: "80 pesos, floja la venta.", 100: "Te dejaron 100 de propina.", 200: "200 pesos, ¡rompiste la banca!" } },
+    Delivery: { pago: [80, 100, 200], mensajes: { 80: "Malas propinas, 80 pesos.", 100: "100 pesos, no está mal.", 200: "Buena propina, 200 pesos!" } },
+    Colmadero: { pago: [80, 100, 200], mensajes: { 80: "80 pesos, día flojo.", 100: "Vendiste bien, 100 pesos.", 200: "Colmado lleno, 200 pesos!" } },
+    Atracador: { pago: [80, 100, 200], mensajes: { 80: "Mal golpe, solo 80 pesos.", 100: "Coronaste con 100 pesos.", 200: "200 pesos, pero cuídate!" } },
+    Pintor: { pago: [80, 100, 200], mensajes: { 80: "80 pesos, desastre de pintura.", 100: "100 pesos por buen trabajo.", 200: "200 pesos, eres un artista!" } },
+    Guachiman: { pago: [80, 100, 200], mensajes: { 80: "80 pesos, día tranquilo.", 100: "100 pesos en multas.", 200: "200 pesos en 'coimas'!" } },
+    Cuero: { pago: [80, 100, 200], mensajes: { 80: "80 pesos, poca clientela.", 100: "100 pesos, buen día.", 200: "200 pesos, ¡tú sí sabes!" } },
+    Bachatero: { pago: [80, 100, 200], mensajes: { 80: "80 pesos, nadie te oyó.", 100: "100 pesos, algo pegaste.", 200: "200 pesos, ¡Romeo eres tú!" } }
   };
 
   const pago = trabajos[trabajo].pago[Math.floor(Math.random() * trabajos[trabajo].pago.length)];

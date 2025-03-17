@@ -97,7 +97,7 @@ module.exports = {
     trabajoStats.users[userJid] = userStats;
     writeData(usageStatsFilePath, trabajoStats);
 
-    await sendReply(`💼 Has comenzado tu trabajo como *${trabajoElegido.nombre}*.\n\n⏳ El pago será en 5 minutos.`);
+    await sendReply(`💼 Has comenzado tu trabajo como *${trabajoElegido.nombre}*.\n\n⏳ El pago será en 3 minutos.`);
 
     setTimeout(async () => {
       await pagarTrabajo(userJid, trabajoElegido.nombre, sendReply);

@@ -16,14 +16,14 @@ module.exports = {
 
     // Texto del mensaje
     const mensaje = fullArgs.trim() || "Atención, grupo!";
-    const link = "https://www.instagram.com/_vasquezemmanuel/";
+    const link = "https://www.instagram.com/KrampusOM";
 
     // Datos para la previsualización
     const contextInfo = {
       isForwarded: true,
       forwardingScore: 2,
       externalAdReply: {
-        title: "Soky Bot",
+        title: "Krampus OM bot",
         body: "Operacion Marshall",
         thumbnailUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/9.png",
         sourceUrl: link,

@@ -108,70 +108,64 @@ const precios = {
 
 module.exports = {
   name: "tienda",
-  description: "Compra objetos en la tienda con tus monedas.",
+  description: "Compra Pokémon en la tienda con tus monedas.",
   commands: ["capturar"],
-  usage: `${PREFIX}tienda <objeto>`,
-  handle: async ({ sendReply, args, userJid }) => {
+  usage: `${PREFIX}tienda <pokemon>`,
+  handle: async ({ socket, remoteJid, sendReply, args, userJid }) => {
     const objeto = args[0]?.toLowerCase();
 
     if (!objeto) {
-      // Mostrar lista de objetos disponibles para comprar
-      let listaPrecios = "⚪️🔴 *Lista de pokemons disponibles*:\n\n> Usa #capturar nombredelpokemon para comprarlo\n";
-      
-      for (const [item, precio] of Object.entries(precios)) {
-        listaPrecios += `- ${item}: ${precio} monedas\n`;
+      // Mostrar lista de Pokémon disponibles
+      let listaPrecios = "⚪️🔴 *Lista de Pokémon disponibles*:\n\n";
+      for (const [pokemon, precio] of Object.entries(precios)) {
+        listaPrecios += `- *${pokemon}*: ${precio} monedas\n`;
       }
-      listaPrecios += `\nUsa *${PREFIX}capturar <pokemon>* para comprar.\n> Por ejemplo *#capturar pichu*`;
-      await sendReply(listaPrecios);
+      listaPrecios += `\nUsa *${PREFIX}capturar <pokemon>* para comprar.\n> Ejemplo: *#capturar pichu*`;
+
+      // Enviar la lista junto con el GIF
+      await socket.sendMessage(remoteJid, {
+        video: fs.readFileSync("assets/sx/tiendapokemon.mp4"),
+        caption: listaPrecios,
+        gifPlayback: true
+      });
       return;
     }
 
     if (!precios[objeto]) {
-      await sendReply("❌ Objeto inválido. Usa el comando sin emojis para ver la lista de objetos.");
+      await sendReply("❌ Pokémon inválido. Usa el comando sin emojis para ver la lista de Pokémon.");
       return;
     }
 
     let krData = readData(krFilePath);
-    if (!krData.find(entry => entry.userJid === userJid)) {
-      krData.push({ userJid, kr: 0 });
-    }
-    const userKr = krData.find(entry => entry.userJid === userJid).kr;
+    let userData = krData.find(entry => entry.userJid === userJid) || { userJid, kr: 0 };
 
-    if (userKr < precios[objeto]) {
-      await sendReply(`❌ No tienes suficientes monedas para tener un ${objeto}.\n> Necesitas ${precios[objeto]} monedas.`);
+    if (userData.kr < precios[objeto]) {
+      await sendReply(`❌ No tienes suficientes monedas para capturar un *${objeto}*.\n> Necesitas ${precios[objeto]} monedas.`);
       return;
     }
 
-    let userItems = readData(userItemsFilePath);
-    if (typeof userItems !== 'object' || !Array.isArray(userItems)) {
-      userItems = [];
+    let userPokemons = readData(userPokemonsFilePath);
+    if (!userPokemons[userJid]) {
+      userPokemons[userJid] = [];
     }
-    if (!userItems.find(entry => entry.userJid === userJid)) {
-      userItems.push({ userJid, items: { hongos: 0 } });
-    }
-    const userItem = userItems.find(entry => entry.userJid === userJid);
-
-    // Agregar el Pokémon a la colección del usuario si no lo tiene
-    if (precios[objeto]) {
-      let userPokemons = readData(userPokemonsFilePath);
-      if (!userPokemons[userJid]) {
-        userPokemons[userJid] = [];
-      }
-      if (userPokemons[userJid].includes(objeto)) {
-        await sendReply(`❌ Ya tienes un *${objeto}* en tu colección.`);
-        return;
-      }
-      userPokemons[userJid].push(objeto);  // Agregar el Pokémon a la colección
-      writeData(userPokemonsFilePath, userPokemons);
+    if (userPokemons[userJid].includes(objeto)) {
+      await sendReply(`❌ Ya tienes un *${objeto}* en tu colección.`);
+      return;
     }
 
-    const userKrBalance = userKr - precios[objeto];
-    krData = krData.map(entry => entry.userJid === userJid ? { userJid, kr: userKrBalance } : entry);
-    userItems = userItems.map(entry => entry.userJid === userJid ? userItem : entry);
+    userPokemons[userJid].push(objeto);
+    writeData(userPokemonsFilePath, userPokemons);
 
-    writeData(userItemsFilePath, userItems);
+    userData.kr -= precios[objeto];
+    krData = krData.map(entry => (entry.userJid === userJid ? userData : entry));
     writeData(krFilePath, krData);
 
-    await sendReply(`¡Has añadido a ${objeto}!\n\nUsa #pokedex para ver tus pokemons\n> Te ${userKrBalance} monedas.`);
+    // Enviar mensaje de confirmación con el GIF
+    await socket.sendMessage(remoteJid, {
+      video: fs.readFileSync("assets/sx/tiendapokemon.mp4"),
+      caption: `🎉 @${userJid.split("@")[0]} ha capturado a *${objeto}*! 🎉\n\nUsa *#pokedex* para ver tu colección.\n💰 Te quedan *${userData.kr}* monedas.`,
+      gifPlayback: true,
+      mentions: [userJid]
+    });
   },
 };

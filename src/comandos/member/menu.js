@@ -95,6 +95,7 @@ COMANDOS:
 ⌠⅏⌡➟ ${PREFIX}gay
 ⌠⅏⌡➟ ${PREFIX}tilapia
 ⌠⅏⌡➟ ${PREFIX}tokischa
+⌠⅏⌡➟ ${PREFIX}banquera
 
 
 ══════════.K.═

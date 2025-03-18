@@ -9,12 +9,15 @@ module.exports = {
   description: "Muestra los Pokémon comprados por el usuario.",
   commands: ["pokedex"],
   usage: `${PREFIX}pokédex`,
-  handle: async ({ sendReply, userJid }) => {
+  handle: async ({ socket, remoteJid, userJid }) => {
     let userPokemons = readData(userPokemonsFilePath);
 
     // Verificar si el usuario tiene Pokémon
     if (!userPokemons[userJid] || userPokemons[userJid].length === 0) {
-      await sendReply("❌ No tienes Pokémon en tu colección.");
+      await socket.sendMessage(remoteJid, {
+        text: `❌ @${userJid.split("@")[0]}, no tienes Pokémon en tu colección.`,
+        mentions: [userJid] // Menciona al usuario
+      });
       return;
     }
 
@@ -22,12 +25,18 @@ module.exports = {
     const pokemons = userPokemons[userJid];
 
     // Crear un mensaje con los Pokémon comprados
-    let pokedexMessage = "¡Estos son los Pokémon que tienes en tu Pokédex!\n\n";
+    let pokedexMessage = `📜 *Pokédex del entrenador @${userJid.split("@")[0]}*\n\n`;
     pokemons.forEach((pokemon) => {
-      pokedexMessage += `*${pokemon}*\n`;
+      pokedexMessage += `🔹 *${pokemon}*\n`;
     });
 
-    await sendReply(pokedexMessage);
+    // Enviar el mensaje con el GIF de la Pokédex y la mención al usuario
+    await socket.sendMessage(remoteJid, {
+      video: fs.readFileSync("assets/sx/pokedex.mp4"),
+      caption: pokedexMessage,
+      gifPlayback: true,
+      mentions: [userJid] // Menciona al usuario
+    });
   },
 };
 

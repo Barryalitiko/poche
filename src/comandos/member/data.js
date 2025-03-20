@@ -120,7 +120,7 @@ module.exports = {
 ┃ 🎁 *Objetos:*  
 ┃    💍 Anillos: *${anillos}*  
 ┃    ✏️ Lapices: *${papeles}*  
-┃    🍄 Hongos: *${hongos}*  // Mostramos la cantidad de hongos  
+┃    🍄 Hongos: *${hongos}*   
 ┃ ❤️ *Corazones:* *${hearts}*  
 ┃ 💖 *Racha de Amor:* *${streak} días*  
 ╰─────────────╯`;

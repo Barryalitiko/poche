@@ -47,9 +47,10 @@ module.exports = {
       await sendReact("⏳", webMessage.key);
 
       const searchResult = await ytSearch(videoQuery);
-      const video = searchResult.videos[0];
+      const video = searchResult.videos.find(v => v.seconds <= 480); // 480 segundos = 8 minutos
+
       if (!video) {
-        await sendReply("❌ No se encontró ningún video con ese nombre.");
+        await sendReply("❌ No se encontró ningún video con duración menor o igual a 8 minutos.");
         return;
       }
 
@@ -72,15 +73,15 @@ module.exports = {
         caption: videoCaption,
       });
 
-      setTimeout(() => {
-        fs.unlink(videoPath, (err) => {
-          if (err) {
-            console.error(`Error al eliminar el archivo de video: ${err}`);
-          } else {
-            console.log(`Archivo de video eliminado: ${videoPath}`);
-          }
-        });
-      }, 1 * 60 * 1000);
+      // Elimina el archivo inmediatamente después de enviarlo
+      fs.unlink(videoPath, (err) => {
+        if (err) {
+          console.error(`Error al eliminar el archivo de video: ${err}`);
+        } else {
+          console.log(`Archivo de video eliminado: ${videoPath}`);
+        }
+      });
+
     } catch (error) {
       console.error("Error al buscar o enviar el video:", error);
       await sendReply("❌ Hubo un error al procesar el video.");

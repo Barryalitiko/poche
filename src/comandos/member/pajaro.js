@@ -6,7 +6,7 @@ module.exports = {
   name: "gay",
   description: "Calcula tu porcentaje de ser gay 🌈",
   commands: ["pajaro"],
-  usage: `${PREFIX}gay`,
+  usage: `${PREFIX}gay [@usuario]`,
   handle: async ({ sendReply, socket, remoteJid, webMessage }) => {
     const usuarioId = webMessage.key.participant; // ID del usuario que usó el comando
 
@@ -21,14 +21,29 @@ module.exports = {
     cooldowns.set(usuarioId, Date.now() + 120000);
     setTimeout(() => cooldowns.delete(usuarioId), 120000);
 
+    // Obtener si mencionaron a alguien o respondieron a un mensaje
+    let mencionados = webMessage.message.extendedTextMessage?.contextInfo?.mentionedJid || [];
+    let personaRespondida = webMessage.message.extendedTextMessage?.contextInfo?.participant;
+
+    let personaEvaluada = null;
+
+    if (mencionados.length > 0) {
+      personaEvaluada = mencionados[0]; // Si hay menciones, tomamos la primera
+    } else if (personaRespondida) {
+      personaEvaluada = personaRespondida; // Si respondieron un mensaje, tomamos a esa persona
+    } else {
+      // Si no mencionaron ni respondieron a nadie, el bot mide al usuario que usó el comando
+      personaEvaluada = usuarioId;
+    }
+
     // Enviar mensaje inicial
-    let sentMessage = await sendReply("🏳️‍🌈 Midiendo tu pajareria...");
+    let sentMessage = await sendReply("🏳️‍🌈 Midiendo el porcentaje...");
 
     // Simulación de carga con nueva barra
     const nivelesCarga = [
       "[̲̅_̲̅_̲̅_̲̅_̲̅_̲̅] 10%",
       "[̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅] 20%",
-      "[̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅] 30%",
+      "[̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅] 30%",
       "[̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅] 40%",
       "[̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅] 50%",
       "[̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅_̲̅] 60%",
@@ -42,7 +57,7 @@ module.exports = {
       await new Promise(resolve => setTimeout(resolve, 500)); // Espera 0.5 segundos
       await socket.sendMessage(remoteJid, {
         edit: sentMessage.key,
-        text: `🏳️‍🌈 Calculando tu porcentaje de pajareria...\n${nivelesCarga[i]}`,
+        text: `🏳️‍🌈 Calculando el porcentaje...\n${nivelesCarga[i]}`,
       });
     }
 
@@ -51,8 +66,8 @@ module.exports = {
 
     // Mensaje final con porcentaje
     await socket.sendMessage(remoteJid, {
-      text: `🌈 @${usuarioId.split("@")[0]}, eres un ${porcentaje}% pajaro. 🏳️‍🌈`,
-      mentions: [usuarioId],
+      text: `🌈 @${personaEvaluada.split("@")[0]}, eres un ${porcentaje}% pajaro. 🏳️‍🌈`,
+      mentions: [personaEvaluada],
     });
   },
 };

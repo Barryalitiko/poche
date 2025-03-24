@@ -1,8 +1,6 @@
 const fs = require("fs");
 const path = require("path");
 const { PREFIX } = require("../../krampus");
-const sharp = require("sharp");
-const fetch = require("node-fetch"); // Asegúrate de tener node-fetch instalado
 
 const userPokemonsFilePath = path.resolve(process.cwd(), "assets/userPokemons.json");
 
@@ -684,28 +682,16 @@ module.exports = {
       return;
     }
 
-    // Descargar la imagen del Pokémon
+    // Enviar la imagen correspondiente del Pokémon respondiendo al comentario
     try {
-      const imageBuffer = await fetch(imagenURL).then(res => res.buffer());
-
-      // Convertir la imagen a WebP usando sharp
-      const webpPath = path.resolve(__dirname, `../../temp/${pokemon}_${userJid}.webp`);
-      
-      await sharp(imageBuffer)
-        .webp()
-        .toFile(webpPath);
-
-      // Enviar el sticker
       await socket.sendMessage(remoteJid, {
-        sticker: fs.readFileSync(webpPath),
-        mimetype: "image/webp",
+        image: { url: imagenURL },
+        caption: `🎉 ¡@${userJid.split('@')[0]} ha invocado a *${pokemon}*!`, // Usar el número de teléfono del usuario para etiquetarlo
+        mentions: [userJid], // Aquí estamos mencionando al usuario que ejecutó el comando
         quoted: message, // Esto hace que se responda al comentario original
       });
-
-      // Eliminar el archivo WebP temporal después de enviarlo
-      fs.unlinkSync(webpPath);
     } catch (error) {
-      console.error("Error al convertir la imagen a WebP:", error);
+      console.error("Error al enviar la imagen:", error);
       await sendReply("❌ Ocurrió un error al invocar tu Pokémon.");
     }
   }

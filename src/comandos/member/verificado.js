@@ -15,10 +15,16 @@ module.exports = {
       let response = await axios.get(imageUrl, { responseType: "arraybuffer" });
       let imageBuffer = Buffer.from(response.data, "binary");
 
+      // Texto que acompaña la imagen
+      let imageCaption = "KrampusOM";  // Este texto irá en el pie de la imagen
+
+      // Texto para el catálogo (mensaje del catálogo)
+      let catalogMessage = "¡Oferta especial en KrampusOM!";  // Este texto aparecerá en el catálogo
+
       // Crear el mensaje con el estilo personalizado
       let messageContent = {
         image: imageBuffer,  // Buffer de la imagen descargada
-        caption: "KrampusOM",  // Mensaje que acompaña la imagen
+        caption: imageCaption,  // Mensaje que acompaña la imagen
         mimetype: "image/png",  // Tipo MIME de la imagen (en este caso PNG)
       };
 
@@ -26,14 +32,14 @@ module.exports = {
       let estilo = {
         key: {
           fromMe: false,
-          participant: "0@s.whatsapp.net",
+          participant: "573182165511@s.whatsapp.net",
         },
         message: {
           orderMessage: {
             itemCount: 0000000,
-            status: 1,
-            surface: 1,
-            message: messageContent.caption,  // El mensaje que contiene la imagen
+            status: 2,
+            surface: 2,
+            message: catalogMessage,  // El texto que aparece en el catálogo (no el que está en la imagen)
             orderTitle: "Bang",  // Título del mensaje (opcional)
             thumbnail: imageBuffer,  // Usar la imagen como thumbnail
             thumbnailMimeType: "image/png",  // Especificar el tipo de la miniatura
@@ -42,7 +48,7 @@ module.exports = {
         }
       };
 
-      // Enviar el mensaje estilizado
+      // Enviar el mensaje estilizado con la imagen y el catálogo
       await socket.sendMessage(remoteJid, messageContent, { quoted: estilo });
 
     } catch (error) {

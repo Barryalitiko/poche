@@ -6,9 +6,9 @@ const { Sticker } = require("wa-sticker-formatter");
 
 module.exports = {
   name: "sticker",
-  description: "Crea stickers de imagen/gif/vídeo",
+  description: "Convierte imágenes, GIFs o videos en stickers.",
   commands: ["s", "sticker"],
-  usage: `${PREFIX}sticker (etiqueta imagen/gif/vídeo) o ${PREFIX}sticker (responde a imagen/gif/vídeo)`,
+  usage: `${PREFIX}sticker (menciona imagen/gif/vídeo) o responde a una imagen/gif/vídeo`,
   handle: async ({
     isImage,
     isVideo,
@@ -16,70 +16,56 @@ module.exports = {
     downloadVideo,
     webMessage,
     sendErrorReply,
-    sendPuzzleReact,
+    sendSuccessReact,
     sendStickerFromFile,
   }) => {
     if (!isImage && !isVideo) {
       throw new InvalidParameterError(
-        "ummm...Debes indicarme lo que quieres que convierta a sticker\n> Krampus OM bot"
+        "📌 Debes marcar una imagen, GIF o video para convertirlo en sticker.\n> Krampus OM bot"
       );
     }
 
+    const inputPath = path.resolve(TEMP_DIR, "input.tmp");
     const outputPath = path.resolve(TEMP_DIR, "output.webp");
 
-    if (isImage) {
-      const inputPath = await downloadImage(webMessage, "input");
-      const imageBuffer = fs.readFileSync(inputPath);
+    try {
+      let buffer;
+      if (isImage) {
+        buffer = fs.readFileSync(await downloadImage(webMessage, inputPath));
+      } else {
+        buffer = fs.readFileSync(await downloadVideo(webMessage, inputPath));
 
-      // Crear sticker desde imagen
-      const sticker = new Sticker(imageBuffer, {
-        type: "full",
-        pack: "Operacion Marshall", // Nombre del pack
-        author: "POCHE\n By Krampus OM", // Autor del sticker
-      });
+        const seconds =
+          webMessage.message?.videoMessage?.seconds ||
+          webMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage
+            ?.videoMessage?.seconds;
 
-      await sticker.toFile(outputPath);
-
-      await sendPuzzleReact();
-      await sendStickerFromFile(outputPath);
-
-      fs.unlinkSync(inputPath);
-      fs.unlinkSync(outputPath);
-    } else {
-      const inputPath = await downloadVideo(webMessage, "input");
-
-      const sizeInSeconds = 10;
-
-      const seconds =
-        webMessage.message?.videoMessage?.seconds ||
-        webMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage
-          ?.videoMessage?.seconds;
-
-      const haveSecondsRule = seconds <= sizeInSeconds;
-
-      if (!haveSecondsRule) {
-        fs.unlinkSync(inputPath);
-
-        await sendErrorReply(`¡ABUSADOR! Este video tiene más de ${sizeInSeconds} segundos.Envía un video más corto.`);
-        return;
+        if (seconds > 10) {
+          throw new InvalidParameterError(
+            "❌ ¡ABUSADOR! Este video tiene más de 10 segundos. Envíame uno más corto."
+          );
+        }
       }
 
-      const videoBuffer = fs.readFileSync(inputPath);
-
-      // Crear sticker desde video
-      const sticker = new Sticker(videoBuffer, {
+      // Crear el sticker con nombre y autor personalizados
+      const sticker = new Sticker(buffer, {
         type: "full",
-        pack: "Operacion Marshall",
-        author: "Krampus OM bot",
+        pack: "Operación Marshall", // Nombre del sticker pack
+        author: "Krampus OM bot", // Autor del sticker
+        quality: 90,
       });
 
       await sticker.toFile(outputPath);
 
-      await sendPuzzleReact();
+      await sendSuccessReact();
       await sendStickerFromFile(outputPath);
-
-      fs.unlinkSync(inputPath);
-      fs.unlinkSync(outputPath);
+    } catch (error) {
+      console.error("❌ Error al crear el sticker:", error);
+      await sendErrorReply("⚠️ Ocurrió un error al crear el sticker.");
+    } finally {
+      // Elimina archivos temporales para evitar acumulación
+      if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+      if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
     }
   },
 };

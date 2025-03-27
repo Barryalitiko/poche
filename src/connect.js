@@ -8,7 +8,6 @@ const {
   isJidBroadcast,
   isJidStatusBroadcast,
   proto,
-  makeInMemoryStore,
   isJidNewsletter,
 } = require("baileys");
 const NodeCache = require("node-cache");
@@ -24,31 +23,23 @@ const {
 
 const msgRetryCounterCache = new NodeCache();
 
-const store = makeInMemoryStore({
-  logger: pino().child({ level: "silent", stream: "store" }),
-});
-
 async function getMessage(key) {
-  if (!store) {
-    return proto.Message.fromObject({});
-  }
-
-  const msg = await store.loadMessage(key.remoteJid, key.id);
-
-  return msg ? msg.message : undefined;
+  return proto.Message.fromObject({});
 }
 
 async function connect() {
-  const { state, saveCreds } = await useMultiFileAuthState(
-    path.resolve(__dirname, "..", "assets", "auth", "baileys")
-  );
+  // Ruta donde se guarda la autenticación
+  const authPath = path.resolve(__dirname, "..", "assets", "auth", "baileys");
+  const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
+  // Obtener la versión más reciente de Baileys
   const { version } = await fetchLatestBaileysVersion();
 
+  // Crear el socket de conexión a WhatsApp
   const socket = makeWASocket({
     version,
     logger: pino({ level: "error" }),
-    printQRInTerminal: false,
+    printQRInTerminal: true, // Mostrar el código QR en la terminal
     defaultQueryTimeoutMs: 60 * 1000,
     auth: state,
     shouldIgnoreJid: (jid) =>
@@ -60,76 +51,84 @@ async function connect() {
     getMessage,
   });
 
+  // Si no está registrado, pedir emparejamiento
   if (!socket.authState.creds.registered) {
-    warningLog("Credenciales no configuradas!");
+    warningLog("¡Credenciales no configuradas!");
 
-    infoLog('Ingrese su numero sin el + (ejemplo: "13733665556"):');
+    infoLog('Ingrese su número sin el + (ejemplo: "13733665556"):');
 
-    const phoneNumber = await question("Ingresa el numero: ");
+    const phoneNumber = await question("Ingresa el número: ");
 
     if (!phoneNumber) {
       errorLog(
-        'Numero de telefono inválido! Reinicia con el comando "npm start".'
+        '¡Número de teléfono inválido! Reinicia con el comando "npm start".'
       );
-
       process.exit(1);
     }
 
     const code = await socket.requestPairingCode(onlyNumbers(phoneNumber));
 
-    sayLog(`Código de Emparejamiento: ${code}`);
+    sayLog(`Código de emparejamiento: ${code}`);
   }
 
+  // Manejo de eventos de conexión
   socket.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect } = update;
 
     if (connection === "close") {
-      const statusCode =
-        lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut;
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
 
       if (statusCode === DisconnectReason.loggedOut) {
-        errorLog("Kram desconectado!");
+        errorLog("¡Sesión cerrada!");
       } else {
         switch (statusCode) {
           case DisconnectReason.badSession:
-            warningLog("Sesion no válida!");
+            warningLog("¡Sesión no válida!");
             break;
           case DisconnectReason.connectionClosed:
-            warningLog("Conexion cerrada!");
+            warningLog("¡Conexión cerrada!");
             break;
           case DisconnectReason.connectionLost:
-            warningLog("Conexion perdida!");
+            warningLog("¡Conexión perdida!");
             break;
           case DisconnectReason.connectionReplaced:
-            warningLog("Conexion de reemplazo!");
+            warningLog("¡Sesión reemplazada en otro dispositivo!");
             break;
           case DisconnectReason.multideviceMismatch:
-            warningLog("Dispositivo incompatible!");
+            warningLog("¡Dispositivo incompatible!");
             break;
           case DisconnectReason.forbidden:
-            warningLog("Conexion prohibida!");
+            warningLog("¡Acceso prohibido!");
             break;
           case DisconnectReason.restartRequired:
-            infoLog('Krampus reiniciado! Reinicia con "npm start".');
+            infoLog('Reiniciando... Usa "npm start" para volver a iniciar.');
             break;
           case DisconnectReason.unavailableService:
-            warningLog("Servicio no disponible!");
+            warningLog("¡Servicio no disponible!");
+            break;
+          default:
+            warningLog("Desconexión inesperada, reconectando...");
             break;
         }
 
-        const newSocket = await connect();
-        load(newSocket);
+        // Intentar reconectar automáticamente
+        setTimeout(async () => {
+          const newSocket = await connect();
+          load(newSocket);
+        }, 5000);
       }
     } else if (connection === "open") {
-      successLog("Operacion Marshall");
+      successLog("¡Bot conectado exitosamente!");
     } else {
       infoLog("Cargando datos...");
     }
   });
 
+  // Guardar credenciales cuando se actualicen
   socket.ev.on("creds.update", saveCreds);
 
   return socket;
 }
 
+// Exportar la función de conexión
 exports.connect = connect;

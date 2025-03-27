@@ -22,12 +22,17 @@ const {
 } = require("./utils/logger");
 
 const msgRetryCounterCache = new NodeCache();
+const MAX_RECONNECT_ATTEMPTS = 5; // Máximo de intentos de reconexión
+let reconnectAttempts = 0; // Contador de intentos
 
 async function getMessage(key) {
   return proto.Message.fromObject({});
 }
 
 async function connect() {
+  // Resetear intentos de reconexión al iniciar correctamente
+  reconnectAttempts = 0;
+
   // Ruta donde se guarda la autenticación
   const authPath = path.resolve(__dirname, "..", "assets", "auth", "baileys");
   const { state, saveCreds } = await useMultiFileAuthState(authPath);
@@ -79,43 +84,57 @@ async function connect() {
       const statusCode = lastDisconnect?.error?.output?.statusCode;
 
       if (statusCode === DisconnectReason.loggedOut) {
-        errorLog("¡Sesión cerrada!");
+        errorLog("¡Sesión cerrada! Reinicia manualmente.");
+        process.exit(1);
       } else {
         switch (statusCode) {
           case DisconnectReason.badSession:
-            warningLog("¡Sesión no válida!");
+            warningLog("¡Sesión no válida! Elimina la carpeta de autenticación.");
             break;
           case DisconnectReason.connectionClosed:
-            warningLog("¡Conexión cerrada!");
+            warningLog("¡Conexión cerrada inesperadamente!");
             break;
           case DisconnectReason.connectionLost:
-            warningLog("¡Conexión perdida!");
+            warningLog("¡Conexión perdida! Intentando reconectar...");
             break;
           case DisconnectReason.connectionReplaced:
-            warningLog("¡Sesión reemplazada en otro dispositivo!");
+            warningLog("¡Sesión iniciada en otro dispositivo! Cerrando.");
+            process.exit(1);
             break;
           case DisconnectReason.multideviceMismatch:
-            warningLog("¡Dispositivo incompatible!");
+            warningLog("¡Dispositivo incompatible! Elimina la sesión y vuelve a intentarlo.");
+            process.exit(1);
             break;
           case DisconnectReason.forbidden:
-            warningLog("¡Acceso prohibido!");
+            warningLog("¡Acceso prohibido! Verifica tu número.");
+            process.exit(1);
             break;
           case DisconnectReason.restartRequired:
             infoLog('Reiniciando... Usa "npm start" para volver a iniciar.');
             break;
           case DisconnectReason.unavailableService:
-            warningLog("¡Servicio no disponible!");
+            warningLog("¡Servicio de WhatsApp no disponible temporalmente!");
             break;
           default:
-            warningLog("Desconexión inesperada, reconectando...");
+            warningLog("Desconexión inesperada.");
             break;
         }
 
-        // Intentar reconectar automáticamente
-        setTimeout(async () => {
-          const newSocket = await connect();
-          load(newSocket);
-        }, 5000);
+        // Intentar reconectar automáticamente si aún no se ha alcanzado el límite
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          reconnectAttempts++;
+          const delay = reconnectAttempts * 5000; // Incrementa el tiempo de espera
+
+          warningLog(`Intento de reconexión ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} en ${delay / 1000} segundos...`);
+
+          setTimeout(async () => {
+            const newSocket = await connect();
+            load(newSocket);
+          }, delay);
+        } else {
+          errorLog("¡Máximo de intentos de reconexión alcanzado! Reinicia manualmente.");
+          process.exit(1);
+        }
       }
     } else if (connection === "open") {
       successLog("¡Bot conectado exitosamente!");

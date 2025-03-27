@@ -28,7 +28,7 @@ module.exports = {
     }
 
     const stickerName = fullArgs || "Operacion Marshall";
-    const stickerAuthor = "POCHE BOT\n By Krampus OM";
+    const stickerAuthor = "POCHE BOT";
 
     try {
       let buffer;

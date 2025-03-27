@@ -2,7 +2,7 @@ const { PREFIX, TEMP_DIR } = require("../../krampus");
 const { InvalidParameterError } = require("../../errors/InvalidParameterError");
 const path = require("path");
 const fs = require("fs");
-const { Sticker, createSticker } = require("wa-sticker-formatter");
+const { Sticker, StickerTypes } = require("wa-sticker-formatter");
 
 module.exports = {
   name: "sticker",
@@ -29,15 +29,19 @@ module.exports = {
 
     if (isImage) {
       const inputPath = await downloadImage(webMessage, "input");
+      const imageBuffer = fs.readFileSync(inputPath);
 
-      // Crear sticker desde imagen usando `createSticker`
-      const stickerBuffer = await createSticker(fs.readFileSync(inputPath), {
-        pack: "Operacion Marshall",
-        author: "POCHE\n By Krampus OM",
-        type: "full",
+      // Crear sticker desde imagen
+      const sticker = new Sticker(imageBuffer, {
+        pack: "Operacion Marshall", // Nombre del pack
+        author: "POCHE\n By Krampus OM", // Autor del sticker
+        type: StickerTypes.FULL,
+        quality: 80,
       });
 
-      fs.writeFileSync(outputPath, stickerBuffer); // Guardamos el sticker
+      const stickerBuffer = await sticker.build(); // Generar el sticker
+
+      fs.writeFileSync(outputPath, stickerBuffer); // Guardar el sticker como archivo
 
       await sendPuzzleReact();
       await sendStickerFromFile(outputPath);
@@ -48,6 +52,7 @@ module.exports = {
       const inputPath = await downloadVideo(webMessage, "input");
 
       const sizeInSeconds = 10;
+
       const seconds =
         webMessage.message?.videoMessage?.seconds ||
         webMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage
@@ -59,14 +64,19 @@ module.exports = {
         return;
       }
 
+      const videoBuffer = fs.readFileSync(inputPath);
+
       // Crear sticker desde video
-      const stickerBuffer = await createSticker(fs.readFileSync(inputPath), {
+      const sticker = new Sticker(videoBuffer, {
         pack: "Operacion Marshall",
-        author: "Krampus OM bot",
-        type: "full",
+        author: "POCHE bot",
+        type: StickerTypes.FULL,
+        quality: 80,
       });
 
-      fs.writeFileSync(outputPath, stickerBuffer); // Guardamos el sticker
+      const stickerBuffer = await sticker.build();
+
+      fs.writeFileSync(outputPath, stickerBuffer);
 
       await sendPuzzleReact();
       await sendStickerFromFile(outputPath);

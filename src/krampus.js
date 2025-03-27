@@ -1,6 +1,6 @@
 const path = require("path");
 
-exports.PREFIX = "#";
+exports.PREFIX = "&";
 
 exports.COMMANDS_DIR = path.join(__dirname, "comandos");
 

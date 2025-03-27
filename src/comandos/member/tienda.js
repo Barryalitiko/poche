@@ -24,7 +24,7 @@ module.exports = {
   usage: `${PREFIX}tienda <objeto>`,
   handle: async ({ sendReply, args, userJid }) => {
     const precios = {
-      "💍": 6,
+      "💍": 170,
       "✏️": 7,
       "🏆": 10, // Añadimos el trofeo
       "🍄": 300, // Añadimos el hongo

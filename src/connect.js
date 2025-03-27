@@ -9,7 +9,8 @@ const {
   isJidStatusBroadcast,
   proto,
   isJidNewsletter,
-} = require("baileys");
+} = require("@whiskeysockets/baileys"); // <--- Se cambia la importación
+
 const NodeCache = require("node-cache");
 const pino = require("pino");
 const { load } = require("./loader");
@@ -22,29 +23,25 @@ const {
 } = require("./utils/logger");
 
 const msgRetryCounterCache = new NodeCache();
-const MAX_RECONNECT_ATTEMPTS = 5; // Máximo de intentos de reconexión
-let reconnectAttempts = 0; // Contador de intentos
+const MAX_RECONNECT_ATTEMPTS = 5;
+let reconnectAttempts = 0;
 
 async function getMessage(key) {
   return proto.Message.fromObject({});
 }
 
 async function connect() {
-  // Resetear intentos de reconexión al iniciar correctamente
   reconnectAttempts = 0;
 
-  // Ruta donde se guarda la autenticación
   const authPath = path.resolve(__dirname, "..", "assets", "auth", "baileys");
   const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
-  // Obtener la versión más reciente de Baileys
   const { version } = await fetchLatestBaileysVersion();
 
-  // Crear el socket de conexión a WhatsApp
   const socket = makeWASocket({
     version,
     logger: pino({ level: "error" }),
-    printQRInTerminal: true, // Mostrar el código QR en la terminal
+    printQRInTerminal: true,
     defaultQueryTimeoutMs: 60 * 1000,
     auth: state,
     shouldIgnoreJid: (jid) =>
@@ -56,7 +53,6 @@ async function connect() {
     getMessage,
   });
 
-  // Si no está registrado, pedir emparejamiento
   if (!socket.authState.creds.registered) {
     warningLog("¡Credenciales no configuradas!");
 
@@ -76,7 +72,6 @@ async function connect() {
     sayLog(`Código de emparejamiento: ${code}`);
   }
 
-  // Manejo de eventos de conexión
   socket.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect } = update;
 
@@ -120,10 +115,9 @@ async function connect() {
             break;
         }
 
-        // Intentar reconectar automáticamente si aún no se ha alcanzado el límite
         if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
           reconnectAttempts++;
-          const delay = reconnectAttempts * 5000; // Incrementa el tiempo de espera
+          const delay = reconnectAttempts * 5000;
 
           warningLog(`Intento de reconexión ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} en ${delay / 1000} segundos...`);
 
@@ -143,11 +137,9 @@ async function connect() {
     }
   });
 
-  // Guardar credenciales cuando se actualicen
   socket.ev.on("creds.update", saveCreds);
 
   return socket;
 }
 
-// Exportar la función de conexión
 exports.connect = connect;

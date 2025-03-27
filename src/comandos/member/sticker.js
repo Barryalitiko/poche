@@ -2,7 +2,7 @@ const { PREFIX, TEMP_DIR } = require("../../krampus");
 const { InvalidParameterError } = require("../../errors/InvalidParameterError");
 const path = require("path");
 const fs = require("fs");
-const { Sticker } = require("wa-sticker-formatter");
+const { Sticker, createSticker } = require("wa-sticker-formatter");
 
 module.exports = {
   name: "sticker",
@@ -29,17 +29,15 @@ module.exports = {
 
     if (isImage) {
       const inputPath = await downloadImage(webMessage, "input");
-      const imageBuffer = fs.readFileSync(inputPath);
 
-      // Crear sticker desde imagen
-      const sticker = new Sticker(imageBuffer, {
-        type: "full",
+      // Crear sticker desde imagen usando `createSticker`
+      const stickerBuffer = await createSticker(fs.readFileSync(inputPath), {
         pack: "Operacion Marshall",
         author: "POCHE\n By Krampus OM",
+        type: "full",
       });
 
-      const stickerBuffer = await sticker.toBuffer(); // Convertimos el sticker a buffer
-      fs.writeFileSync(outputPath, stickerBuffer); // Guardamos el archivo
+      fs.writeFileSync(outputPath, stickerBuffer); // Guardamos el sticker
 
       await sendPuzzleReact();
       await sendStickerFromFile(outputPath);
@@ -61,17 +59,14 @@ module.exports = {
         return;
       }
 
-      const videoBuffer = fs.readFileSync(inputPath);
-
       // Crear sticker desde video
-      const sticker = new Sticker(videoBuffer, {
-        type: "full",
+      const stickerBuffer = await createSticker(fs.readFileSync(inputPath), {
         pack: "Operacion Marshall",
         author: "Krampus OM bot",
+        type: "full",
       });
 
-      const stickerBuffer = await sticker.toBuffer(); // Convertimos el sticker a buffer
-      fs.writeFileSync(outputPath, stickerBuffer); // Guardamos el archivo
+      fs.writeFileSync(outputPath, stickerBuffer); // Guardamos el sticker
 
       await sendPuzzleReact();
       await sendStickerFromFile(outputPath);

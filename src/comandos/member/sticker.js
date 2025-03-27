@@ -6,9 +6,9 @@ const { Sticker } = require("wa-sticker-formatter");
 
 module.exports = {
   name: "sticker",
-  description: "Convierte imágenes, GIFs o videos en stickers.",
+  description: "Crea stickers de imagen/gif/vídeo",
   commands: ["s", "sticker"],
-  usage: `${PREFIX}sticker (menciona imagen/gif/vídeo) o responde a una imagen/gif/vídeo`,
+  usage: `${PREFIX}sticker (etiqueta imagen/gif/vídeo) o ${PREFIX}sticker (responde a imagen/gif/vídeo)`,
   handle: async ({
     isImage,
     isVideo,
@@ -16,56 +16,68 @@ module.exports = {
     downloadVideo,
     webMessage,
     sendErrorReply,
-    sendSuccessReact,
+    sendPuzzleReact,
     sendStickerFromFile,
   }) => {
     if (!isImage && !isVideo) {
       throw new InvalidParameterError(
-        "📌 Debes marcar una imagen, GIF o video para convertirlo en sticker.\n> Krampus OM bot"
+        "ummm... Debes indicarme lo que quieres que convierta a sticker\n> Krampus OM bot"
       );
     }
 
-    const inputPath = path.resolve(TEMP_DIR, "input.tmp");
     const outputPath = path.resolve(TEMP_DIR, "output.webp");
 
-    try {
-      let buffer;
-      if (isImage) {
-        buffer = fs.readFileSync(await downloadImage(webMessage, inputPath));
-      } else {
-        buffer = fs.readFileSync(await downloadVideo(webMessage, inputPath));
+    if (isImage) {
+      const inputPath = await downloadImage(webMessage, "input");
+      const imageBuffer = fs.readFileSync(inputPath);
 
-        const seconds =
-          webMessage.message?.videoMessage?.seconds ||
-          webMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage
-            ?.videoMessage?.seconds;
-
-        if (seconds > 10) {
-          throw new InvalidParameterError(
-            "❌ ¡ABUSADOR! Este video tiene más de 10 segundos. Envíame uno más corto."
-          );
-        }
-      }
-
-      // Crear el sticker con nombre y autor personalizados
-      const sticker = new Sticker(buffer, {
+      // Crear sticker desde imagen
+      const sticker = new Sticker(imageBuffer, {
         type: "full",
-        pack: "Operación Marshall", // Nombre del sticker pack
-        author: "Krampus OM bot", // Autor del sticker
-        quality: 90,
+        pack: "Operacion Marshall",
+        author: "POCHE\n By Krampus OM",
       });
 
-      await sticker.toFile(outputPath);
+      const stickerBuffer = await sticker.toBuffer(); // Convertimos el sticker a buffer
+      fs.writeFileSync(outputPath, stickerBuffer); // Guardamos el archivo
 
-      await sendSuccessReact();
+      await sendPuzzleReact();
       await sendStickerFromFile(outputPath);
-    } catch (error) {
-      console.error("❌ Error al crear el sticker:", error);
-      await sendErrorReply("⚠️ Ocurrió un error al crear el sticker.");
-    } finally {
-      // Elimina archivos temporales para evitar acumulación
-      if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-      if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+
+      fs.unlinkSync(inputPath);
+      fs.unlinkSync(outputPath);
+    } else {
+      const inputPath = await downloadVideo(webMessage, "input");
+
+      const sizeInSeconds = 10;
+      const seconds =
+        webMessage.message?.videoMessage?.seconds ||
+        webMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage
+          ?.videoMessage?.seconds;
+
+      if (seconds > sizeInSeconds) {
+        fs.unlinkSync(inputPath);
+        await sendErrorReply(`¡ABUSADOR! Este video tiene más de ${sizeInSeconds} segundos. Envía un video más corto.`);
+        return;
+      }
+
+      const videoBuffer = fs.readFileSync(inputPath);
+
+      // Crear sticker desde video
+      const sticker = new Sticker(videoBuffer, {
+        type: "full",
+        pack: "Operacion Marshall",
+        author: "Krampus OM bot",
+      });
+
+      const stickerBuffer = await sticker.toBuffer(); // Convertimos el sticker a buffer
+      fs.writeFileSync(outputPath, stickerBuffer); // Guardamos el archivo
+
+      await sendPuzzleReact();
+      await sendStickerFromFile(outputPath);
+
+      fs.unlinkSync(inputPath);
+      fs.unlinkSync(outputPath);
     }
   },
 };

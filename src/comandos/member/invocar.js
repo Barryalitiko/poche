@@ -711,7 +711,7 @@ module.exports = {
 
     } catch (error) {
       console.error("Error al crear o enviar el sticker:", error);
-      await sendReply("❌ Ocurrió un error al invocar tu Pokémon."));
+      await sendReply("❌ Ocurrió un error al invocar tu Pokémon.");
     }
   }
 };

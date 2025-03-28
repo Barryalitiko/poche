@@ -29,7 +29,7 @@ module.exports = {
     const outputPath = path.resolve(TEMP_DIR, "output.webp");
 
     const stickerPackName = "Operacion Marshall";  // Nombre del paquete de stickers
-    const authorName = "Krampus OM bot";  // Nombre del autor
+    const authorName = "POCHE bot\n by Krampus OM";  // Nombre del autor
 
     if (isImage) {
       const inputPath = await downloadImage(webMessage, "input");

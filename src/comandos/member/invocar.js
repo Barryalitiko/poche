@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { PREFIX } = require("../../krampus");
+const { Sticker } = require("wa-sticker-formatter");
 
 const userPokemonsFilePath = path.resolve(process.cwd(), "assets/userPokemons.json");
 
@@ -682,17 +683,35 @@ module.exports = {
       return;
     }
 
-    // Enviar la imagen correspondiente del Pokémon respondiendo al comentario
+    // Obtener el nombre del dueño
+    const userName = userJid.split('@')[0];  // Nombre del dueño del Pokémon (sin la parte del dominio)
+
     try {
+      // Descargamos la imagen del Pokémon desde la URL
+      const imageBuffer = await (await fetch(imagenURL)).buffer();
+
+      // Crear sticker usando wa-sticker-formatter
+      const sticker = new Sticker(imageBuffer, {
+        pack: pokemon, // El nombre del paquete es el nombre del Pokémon
+        author: userName, // El autor es el nombre del dueño
+      });
+
+      // Guardar el sticker en un archivo temporal
+      const outputPath = path.resolve(__dirname, "temp_sticker.webp");
+      await sticker.toFile(outputPath);
+
+      // Enviar el sticker al chat
       await socket.sendMessage(remoteJid, {
-        image: { url: imagenURL },
-        caption: `🎉 ¡@${userJid.split('@')[0]} ha invocado a *${pokemon}*!`, // Usar el número de teléfono del usuario para etiquetarlo
-        mentions: [userJid], // Aquí estamos mencionando al usuario que ejecutó el comando
+        sticker: { url: outputPath },  // Enviar el sticker generado
         quoted: message, // Esto hace que se responda al comentario original
       });
+
+      // Limpiar los archivos temporales
+      fs.unlinkSync(outputPath);
+
     } catch (error) {
-      console.error("Error al enviar la imagen:", error);
-      await sendReply("❌ Ocurrió un error al invocar tu Pokémon.");
+      console.error("Error al crear o enviar el sticker:", error);
+      await sendReply("❌ Ocurrió un error al invocar tu Pokémon."));
     }
   }
 };

@@ -17,13 +17,15 @@ module.exports = {
     webMessage,
     sendErrorReply,
     sendPuzzleReact,
-    sendStickerFromBuffer,
+    sendStickerFromFile,
   }) => {
     if (!isImage && !isVideo) {
       throw new InvalidParameterError(
-        "ummm... Debes indicarme lo que quieres que convierta a sticker\n> Krampus OM bot"
+        "ummm...Debes indicarme lo que quieres que convierta a sticker\n> Krampus OM bot"
       );
     }
+
+    const outputPath = path.resolve(TEMP_DIR, "output.webp");
 
     if (isImage) {
       const inputPath = await downloadImage(webMessage, "input");
@@ -31,20 +33,22 @@ module.exports = {
 
       // Crear sticker desde imagen
       const sticker = new Sticker(imageBuffer, {
-        type: "full",
         pack: "Operacion Marshall", // Nombre del pack
         author: "Krampus OM bot", // Autor del sticker
       });
 
-      await sticker.build(); // Construir el sticker antes de convertirlo
-      const stickerBuffer = await sticker.toBuffer();
+      const stickerBuffer = await sticker.toBuffer();  // Aquí usamos toBuffer()
+
+      fs.writeFileSync(outputPath, stickerBuffer);  // Guardamos el archivo
 
       await sendPuzzleReact();
-      await sendStickerFromBuffer(stickerBuffer);
+      await sendStickerFromFile(outputPath);
 
       fs.unlinkSync(inputPath);
+      fs.unlinkSync(outputPath);
     } else {
       const inputPath = await downloadVideo(webMessage, "input");
+
       const sizeInSeconds = 10;
 
       const seconds =
@@ -52,11 +56,12 @@ module.exports = {
         webMessage.message?.extendedTextMessage?.contextInfo?.quotedMessage
           ?.videoMessage?.seconds;
 
-      if (seconds > sizeInSeconds) {
+      const haveSecondsRule = seconds <= sizeInSeconds;
+
+      if (!haveSecondsRule) {
         fs.unlinkSync(inputPath);
-        await sendErrorReply(
-          `¡ABUSADOR! Este video tiene más de ${sizeInSeconds} segundos. Envía un video más corto.`
-        );
+
+        await sendErrorReply(`¡ABUSADOR! Este video tiene más de ${sizeInSeconds} segundos.Envía un video más corto.`);
         return;
       }
 
@@ -64,18 +69,19 @@ module.exports = {
 
       // Crear sticker desde video
       const sticker = new Sticker(videoBuffer, {
-        type: "full",
         pack: "Operacion Marshall",
         author: "Krampus OM bot",
       });
 
-      await sticker.build();
-      const stickerBuffer = await sticker.toBuffer();
+      const stickerBuffer = await sticker.toBuffer();  // Aquí usamos toBuffer()
+
+      fs.writeFileSync(outputPath, stickerBuffer);  // Guardamos el archivo
 
       await sendPuzzleReact();
-      await sendStickerFromBuffer(stickerBuffer);
+      await sendStickerFromFile(outputPath);
 
       fs.unlinkSync(inputPath);
+      fs.unlinkSync(outputPath);
     }
   },
 };

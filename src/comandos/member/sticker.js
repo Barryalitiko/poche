@@ -2,12 +2,13 @@ const { PREFIX, TEMP_DIR } = require("../../krampus");
 const { InvalidParameterError } = require("../../errors/InvalidParameterError");
 const path = require("path");
 const fs = require("fs");
+const { exec } = require("child_process");
 const { Sticker } = require("wa-sticker-formatter");
 
 module.exports = {
   name: "sticker",
   description: "Crea stickers de imagen/gif/vídeo",
-  commands: ["s", "sticker"],
+  commands: ["s", "sticker", "fig", "f"],
   usage: `${PREFIX}sticker (etiqueta imagen/gif/vídeo) o ${PREFIX}sticker (responde a imagen/gif/vídeo)`,
   handle: async ({
     isImage,
@@ -16,32 +17,33 @@ module.exports = {
     downloadVideo,
     webMessage,
     sendErrorReply,
-    sendPuzzleReact,
+    sendSuccessReact,
     sendStickerFromFile,
   }) => {
     if (!isImage && !isVideo) {
       throw new InvalidParameterError(
-        "ummm...Debes indicarme lo que quieres que convierta a sticker\n> Krampus OM bot"
+        "👻 Krampus 👻 Debes marcar imagen/gif/vídeo o responder a una imagen/gif/vídeo"
       );
     }
 
     const outputPath = path.resolve(TEMP_DIR, "output.webp");
 
+    const stickerPackName = "Operacion Marshall";  // Nombre del paquete de stickers
+    const authorName = "Krampus OM bot";  // Nombre del autor
+
     if (isImage) {
       const inputPath = await downloadImage(webMessage, "input");
       const imageBuffer = fs.readFileSync(inputPath);
 
-      // Crear sticker desde imagen
+      // Crear sticker desde imagen usando wa-sticker-formatter
       const sticker = new Sticker(imageBuffer, {
-        pack: "Operacion Marshall", // Nombre del pack
-        author: "Krampus OM bot", // Autor del sticker
+        pack: stickerPackName,
+        author: authorName,
       });
 
-      const stickerBuffer = await sticker.toBuffer();  // Aquí usamos toBuffer()
+      await sticker.toFile(outputPath);
 
-      fs.writeFileSync(outputPath, stickerBuffer);  // Guardamos el archivo
-
-      await sendPuzzleReact();
+      await sendSuccessReact();
       await sendStickerFromFile(outputPath);
 
       fs.unlinkSync(inputPath);
@@ -61,27 +63,40 @@ module.exports = {
       if (!haveSecondsRule) {
         fs.unlinkSync(inputPath);
 
-        await sendErrorReply(`¡ABUSADOR! Este video tiene más de ${sizeInSeconds} segundos.Envía un video más corto.`);
+        await sendErrorReply(`👻 Krampus 👻Este video tiene más de ${sizeInSeconds} segundos!
+
+Envia un video más corto!`);
+
         return;
       }
 
-      const videoBuffer = fs.readFileSync(inputPath);
+      exec(
+        `ffmpeg -i ${inputPath} -y -vcodec libwebp -fs 0.99M -filter_complex "[0:v] scale='if(gt(iw,ih),512,-2)':'if(gt(ih,iw),512,-2)',fps=12,pad=ceil(iw/2)*2:ceil(ih/2)*2:-1:-1:color=white@0.0,split[a][b];[a]palettegen=reserve_transparent=on:transparency_color=ffffff[p];[b][p]paletteuse" -f webp ${outputPath}`,
+        async (error) => {
+          if (error) {
+            console.log(error);
+            fs.unlinkSync(inputPath);
 
-      // Crear sticker desde video
-      const sticker = new Sticker(videoBuffer, {
-        pack: "Operacion Marshall",
-        author: "Krampus OM bot",
-      });
+            throw new Error(error);
+          }
 
-      const stickerBuffer = await sticker.toBuffer();  // Aquí usamos toBuffer()
+          const videoBuffer = fs.readFileSync(outputPath);
 
-      fs.writeFileSync(outputPath, stickerBuffer);  // Guardamos el archivo
+          // Crear sticker desde video usando wa-sticker-formatter
+          const sticker = new Sticker(videoBuffer, {
+            pack: stickerPackName,
+            author: authorName,
+          });
 
-      await sendPuzzleReact();
-      await sendStickerFromFile(outputPath);
+          await sticker.toFile(outputPath);
 
-      fs.unlinkSync(inputPath);
-      fs.unlinkSync(outputPath);
+          await sendSuccessReact();
+          await sendStickerFromFile(outputPath);
+
+          fs.unlinkSync(inputPath);
+          fs.unlinkSync(outputPath);
+        }
+      );
     }
   },
 };

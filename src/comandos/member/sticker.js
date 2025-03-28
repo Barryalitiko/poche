@@ -40,7 +40,8 @@ module.exports = {
           author: "Krampus OM bot",
         });
 
-        await sticker.toFile(outputPath);
+        const stickerBuffer = await sticker.toBuffer();
+        await fs.writeFile(outputPath, stickerBuffer);
 
         await sendPuzzleReact();
         await sendStickerFromFile(outputPath);
@@ -76,7 +77,8 @@ module.exports = {
           author: "Krampus OM bot",
         });
 
-        await sticker.toFile(outputPath);
+        const stickerBuffer = await sticker.toBuffer();
+        await fs.writeFile(outputPath, stickerBuffer);
 
         await sendPuzzleReact();
         await sendStickerFromFile(outputPath);

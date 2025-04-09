@@ -24,7 +24,7 @@ module.exports = {
         remoteJid: remoteJid,
         fromMe: false,
         id: "FAKE-QUOTE-PING",
-        participant: "0@s.whatsapp.net",
+        participant: "34627280815@s.whatsapp.net",
       },
       message: {
         conversation: "Poche bot\n by Krampus",

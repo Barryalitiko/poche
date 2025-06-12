@@ -9,7 +9,7 @@ const {
   isJidStatusBroadcast,
   proto,
   isJidNewsletter,
-} = require("@whiskeysockets/baileys");
+} = require("@whiskeysockets/baileys"); 
 
 const NodeCache = require("node-cache");
 const pino = require("pino");
@@ -41,6 +41,7 @@ async function connect() {
   const socket = makeWASocket({
     version,
     logger: pino({ level: "error" }),
+    printQRInTerminal: true,
     defaultQueryTimeoutMs: 60 * 1000,
     auth: state,
     shouldIgnoreJid: (jid) =>
@@ -52,11 +53,11 @@ async function connect() {
     getMessage,
   });
 
-  // Generar código de vinculación si no está registrado
   if (!socket.authState.creds.registered) {
     warningLog("¡Credenciales no configuradas!");
 
-    infoLog('Ingrese su número sin el "+" (ejemplo: "573103334455"):');
+    infoLog('Ingrese su número sin el + mmñm (ejemplo: "13733665556"):');
+
     const phoneNumber = await question("Ingresa el número: ");
 
     if (!phoneNumber) {
@@ -66,15 +67,9 @@ async function connect() {
       process.exit(1);
     }
 
-    try {
-      const code = await socket.requestPairingCode(onlyNumbers(phoneNumber));
-      sayLog(`🔗 Código de emparejamiento para vincular: ${code}`);
-      infoLog("Abre WhatsApp Web, haz clic en 'Vincular con número' y escribe el código.");
-    } catch (e) {
-      errorLog("❌ Error al solicitar el código de emparejamiento.");
-      console.error(e);
-      process.exit(1);
-    }
+    const code = await socket.requestPairingCode(onlyNumbers(phoneNumber));
+
+    sayLog(`Código de emparejamiento: ${code}`);
   }
 
   socket.ev.on("connection.update", async (update) => {
@@ -136,7 +131,7 @@ async function connect() {
         }
       }
     } else if (connection === "open") {
-      successLog("✅ ¡Bot conectado exitosamente!");
+      successLog("¡Bot conectado exitosamente!");
     } else {
       infoLog("Cargando datos...");
     }

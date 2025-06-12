@@ -263,15 +263,20 @@ exports.loadCommonFunctions = ({ socket, webMessage }) => {
     );
   };
   
-  const sendReplyWithButton = async (text, buttons) => {
+  const sendReplyWithButton = async (text, buttons, quoted = webMessage) => {
   const buttonMessage = {
     text,
     footer: "",
-    buttons: buttons,
-    headerType: 1,
+    buttons,
+    headerType: 1, 
   };
 
-  return await socket.sendMessage(remoteJid, buttonMessage, { quoted: webMessage });
+  try {
+    return await socket.sendMessage(remoteJid, buttonMessage, { quoted });
+  } catch (error) {
+    console.error("Error al enviar botones:", error);
+    return await sendErrorReply("No se pudo enviar los botones.");
+  }
 };
 
 const blockUser = async (phoneNumber) => {

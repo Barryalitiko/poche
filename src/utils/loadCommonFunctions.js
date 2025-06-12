@@ -3,6 +3,22 @@ const { extractDataFromMessage, baileysIs, download } = require(".");
 const { waitMessage } = require("./messages");
 const fs = require("fs");
 
+const {
+  updateBlockStatus,
+  groupCreate,
+  groupParticipantsUpdate,
+  groupUpdateSubject,
+  setStatus: setStatusPro,
+  sendPinMessage,
+  sendListMessage: sendListMessagePro,
+  sendTemplateMessage: sendTemplateMessagePro,
+  updatePrivacySettings: updatePrivacySettingsPro,
+  createChannel,
+  sendChannelMessage,
+  sendReactionMessage: sendReactionMessagePro,
+  setEphemeralSettings,
+} = require('@fizzxydev/baileys-pro');
+
 exports.loadCommonFunctions = ({ socket, webMessage }) => {
   const {
     args,
@@ -258,6 +274,172 @@ exports.loadCommonFunctions = ({ socket, webMessage }) => {
   return await socket.sendMessage(remoteJid, buttonMessage, { quoted: webMessage });
 };
 
+const blockUser = async (phoneNumber) => {
+  try {
+    const jid = `${phoneNumber.replace(/\D/g, '')}@s.whatsapp.net`;
+    await updateBlockStatus(socket, jid, 'block');
+    return await sendSuccessReply(`Usuario ${phoneNumber} bloqueado.`);
+  } catch (error) {
+    console.error("Error al bloquear:", error);
+    return await sendErrorReply(`No se pudo bloquear a ${phoneNumber}.`);
+  }
+};
+
+const unblockUser = async (phoneNumber) => {
+  try {
+    const jid = `${phoneNumber.replace(/\D/g, '')}@s.whatsapp.net`;
+    await updateBlockStatus(socket, jid, 'unblock');
+    return await sendSuccessReply(`Usuario ${phoneNumber} desbloqueado.`);
+  } catch (error) {
+    console.error("Error al desbloquear:", error);
+    return await sendErrorReply(`No se pudo desbloquear a ${phoneNumber}.`);
+  }
+};
+
+const createGroup = async (subject, participants) => {
+  try {
+    const group = await groupCreate(socket, subject, participants.map(p => `${p.replace(/\D/g, '')}@s.whatsapp.net`));
+    return await sendSuccessReply(`Grupo "${subject}" creado. ID: ${group.id}`);
+  } catch (error) {
+    console.error("Error al crear grupo:", error);
+    return await sendErrorReply("No se pudo crear el grupo.");
+  }
+};
+
+const updateGroupParticipants = async (groupId, participants, action) => {
+  try {
+    await groupParticipantsUpdate(socket, groupId, participants.map(p => `${p.replace(/\D/g, '')}@s.whatsapp.net`), action);
+    return await sendSuccessReply(`Participantes ${action} correctamente.`);
+  } catch (error) {
+    console.error("Error al actualizar participantes:", error);
+    return await sendErrorReply(`No se pudo ${action} participantes.`);
+  }
+};
+
+const updateGroupSubject = async (groupId, subject) => {
+  try {
+    await groupUpdateSubject(socket, groupId, subject);
+    return await sendSuccessReply(`Nombre del grupo cambiado a "${subject}".`);
+  } catch (error) {
+    console.error("Error al cambiar nombre del grupo:", error);
+    return await sendErrorReply("No se pudo actualizar el nombre.");
+  }
+};
+
+const sendAdvancedListMessage = async (title, description, buttonText, sections) => {
+  try {
+    const listMsg = {
+      text: title,
+      footer: "",
+      title: description,
+      buttonText,
+      sections,
+    };
+    return await socket.sendMessage(remoteJid, listMsg, { quoted: webMessage });
+  } catch (error) {
+    console.error("Error en mensaje de lista:", error);
+    return await sendErrorReply("No se pudo enviar el mensaje de lista.");
+  }
+};
+
+const setStatus = async (content, type = 'text', options = {}) => {
+  try {
+    let statusContent;
+    if (type === 'text') {
+      statusContent = content;
+    } else if (['image', 'video'].includes(type)) {
+      statusContent = { url: content, mimetype: type === 'image' ? 'image/jpeg' : 'video/mp4' };
+    } else {
+      throw new Error('Tipo de estado inválido');
+    }
+    await setStatusPro(socket, statusContent, type, options);
+    return await sendSuccessReply(`Estado ${type} actualizado.`);
+  } catch (error) {
+    console.error("Error al subir estado:", error);
+    return await sendErrorReply("No se pudo subir el estado.");
+  }
+};
+
+const pinMessage = async (chatId, messageId) => {
+  try {
+    await sendPinMessage(socket, chatId, messageId, true);
+    return await sendSuccessReply(`Mensaje fijado en ${chatId}.`);
+  } catch (error) {
+    console.error("Error al fijar:", error);
+    return await sendErrorReply("No se pudo fijar el mensaje.");
+  }
+};
+
+const unpinMessage = async (chatId, messageId) => {
+  try {
+    await sendPinMessage(socket, chatId, messageId, false);
+    return await sendSuccessReply(`Mensaje desfijado de ${chatId}.`);
+  } catch (error) {
+    console.error("Error al desfijar:", error);
+    return await sendErrorReply("No se pudo desfijar.");
+  }
+};
+
+const sendTemplateMessage = async (jid, template) => {
+  try {
+    await sendTemplateMessagePro(socket, jid, template);
+    return await sendSuccessReply(`Plantilla enviada a ${jid}.`);
+  } catch (error) {
+    console.error("Error al enviar plantilla:", error);
+    return await sendErrorReply("No se pudo enviar plantilla.");
+  }
+};
+
+const updatePrivacy = async (settings) => {
+  try {
+    await updatePrivacySettingsPro(socket, settings);
+    return await sendSuccessReply("Privacidad actualizada.");
+  } catch (error) {
+    console.error("Error en privacidad:", error);
+    return await sendErrorReply("No se pudo actualizar privacidad.");
+  }
+};
+
+const createChannelWrapper = async (name, description) => {
+  try {
+    const channel = await createChannel(socket, name, description);
+    return await sendSuccessReply(`Canal "${name}" creado con ID: ${channel.id}`);
+  } catch (error) {
+    console.error("Error al crear canal:", error);
+    return await sendErrorReply("No se pudo crear canal.");
+  }
+};
+
+const sendChannelMessageWrapper = async (channelId, message) => {
+  try {
+    await sendChannelMessage(socket, channelId, message);
+    return await sendSuccessReply(`Mensaje enviado a canal ${channelId}.`);
+  } catch (error) {
+    console.error("Error al enviar a canal:", error);
+    return await sendErrorReply("No se pudo enviar al canal.");
+  }
+};
+
+const sendReaction = async (key, reaction) => {
+  try {
+    await sendReactionMessagePro(socket, key, reaction);
+    return await sendSuccessReply(`Reacción ${reaction} enviada.`);
+  } catch (error) {
+    console.error("Error al reaccionar:", error);
+    return await sendErrorReply("No se pudo enviar reacción.");
+  }
+};
+
+const setEphemeral = async (jid, duration) => {
+  try {
+    await setEphemeralSettings(socket, jid, duration);
+    return await sendSuccessReply(`Mensajes efímeros configurados para ${jid}.`);
+  } catch (error) {
+    console.error("Error al configurar efímeros:", error);
+    return await sendErrorReply("No se pudo configurar efímeros.");
+  }
+};
+
   return {
     args,
     commandName,
@@ -302,5 +484,21 @@ exports.loadCommonFunctions = ({ socket, webMessage }) => {
     sendVideoFromFile,
     sendLinkReact,
     sendReplyWithButton,
+    sendReplyWithButton,
+  blockUser,
+  unblockUser,
+  createGroup,
+  updateGroupParticipants,
+  updateGroupSubject,
+  sendAdvancedListMessage,
+  setStatus,
+  pinMessage,
+  unpinMessage,
+  sendTemplateMessage,
+  updatePrivacy,
+  createChannelWrapper,
+  sendChannelMessageWrapper,
+  sendReaction,
+  setEphemeral,
   };
 };
